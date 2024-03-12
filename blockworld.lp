@@ -111,4 +111,4 @@ holds(F,T+1) :- holds(F,T), perform(A,T), not del(A,F), time(T).
 :- but(F), not holds(F,n).
 
 
-#show holds/2.
+#show perform/2.
