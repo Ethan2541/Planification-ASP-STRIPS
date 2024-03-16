@@ -8,7 +8,7 @@
         (handempty)
         (holding ?x - block))
         
-    (:action pick-up
+    (:action pickup
     ;;; action qui ramasse un bloc pose sur la table
     :parameters (?x - block)
     :precondition (and (clear ?x) (ontable ?x) (handempty))
@@ -17,7 +17,7 @@
     (not (handempty))
     (holding ?x)))
     
-    (:action put-down
+    (:action putdown
     :parameters (?x - block)
     :precondition (holding ?x)
     :effect (and(ontable ?x)(clear ?x)(handempty)

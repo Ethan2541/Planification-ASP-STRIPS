@@ -49,7 +49,7 @@ class DomainWriter(object):
                     names = [t.name.upper() for t in p.terms]
                     predicat = f"{p.name}({','.join(names)})" if len(names) > 0 else f"{p.name}"
                     params_names = [t.name.upper() for t in a.parameters]
-                    action = f"{a.name}({','.join(names)})" if len(params_names) > 0 else f"{a.name}"
+                    action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                     preconditions += f"pre({action}, {predicat}) :- action({action}).\n"
         preconditions += "\n:- perform(A,T), pre(A,C), not holds(C,T), time(T).\n"
         return preconditions
@@ -62,7 +62,7 @@ class DomainWriter(object):
                 names = [t.name.upper() for t in p.terms]
                 predicat = f"{p.name}({','.join(names)})" if len(names) > 0 else f"{p.name}"
                 params_names = [t.name.upper() for t in a.parameters]
-                action = f"{a.name}({','.join(names)})" if len(params_names) > 0 else f"{a.name}"
+                action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                 positive_effects += f"add({action}, {predicat}) :- action({action}).\n"
             elif not isinstance(a.effect, Not):
                 for p in a.effect.operands:
@@ -71,7 +71,7 @@ class DomainWriter(object):
                     names = [t.name.upper() for t in p.terms]
                     predicat = f"{p.name}({','.join(names)})" if len(names) > 0 else f"{p.name}"
                     params_names = [t.name.upper() for t in a.parameters]
-                    action = f"{a.name}({','.join(names)})" if len(params_names) > 0 else f"{a.name}"
+                    action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                     positive_effects += f"add({action}, {predicat}) :- action({action}).\n"
         positive_effects += "\nholds(F,T+1) :- perform(A,T), add(A,F).\n"
         return positive_effects
@@ -82,9 +82,9 @@ class DomainWriter(object):
             if isinstance(a.effect, Not):
                 p = a.effect.argument
                 names = [t.name.upper() for t in p.terms]
-                predicat = f"{p.name}({', '.join(names)})" if len(names) > 0 else f"{p.name}"
+                predicat = f"{p.name}({','.join(names)})" if len(names) > 0 else f"{p.name}"
                 params_names = [t.name.upper() for t in a.parameters]
-                action = f"{a.name}({', '.join(names)})" if len(params_names) > 0 else f"{a.name}"
+                action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                 negative_effects += f"del({action}, {predicat}) :- action({action}).\n"
             elif not isinstance(a.effect, Predicate):
                 for p in a.effect.operands:
@@ -92,9 +92,9 @@ class DomainWriter(object):
                         continue
                     p = p.argument
                     names = [t.name.upper() for t in p.terms]
-                    predicat = f"{p.name}({', '.join(names)})" if len(names) > 0 else f"{p.name}"
+                    predicat = f"{p.name}({','.join(names)})" if len(names) > 0 else f"{p.name}"
                     params_names = [t.name.upper() for t in a.parameters]
-                    action = f"{a.name}({', '.join(names)})" if len(params_names) > 0 else f"{a.name}"
+                    action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                     negative_effects += f"del({action}, {predicat}) :- action({action}).\n"
         negative_effects += "\nholds(F,T+1) :- holds(F,T), perform(A,T), not del(A,F), time(T).\n"
         return negative_effects
@@ -120,15 +120,15 @@ class ProblemWriter(object):
     def write_objects(self):
         objects = ""
         for o in self.objects:
-            objects += f"{o.type_tag}({o.name}).\n"
+            objects += f"{o.type_tag}({o.name.lower()}).\n"
         return objects
     
     def write_init(self):
         init = ""
         for i in self.init:
             if isinstance(i, Predicate):
-                names = [t.name.upper() for t in i.terms]
-                predicat = f"{i.name}({', '.join(names)})" if len(names) > 0 else f"{i.name}"
+                names = [t.name.lower() for t in i.terms]
+                predicat = f"{i.name}({','.join(names)})" if len(names) > 0 else f"{i.name}"
                 init += f"init({predicat}).\n"
             elif isinstance(i, Not):
                 continue
@@ -138,15 +138,15 @@ class ProblemWriter(object):
     def write_goal(self):
         goal = ""
         if isinstance(self.goal, Predicate):
-            names = [t.name.upper() for t in self.goal.terms]
-            predicat = f"{self.goal.name}({', '.join(names)})" if len(names) > 0 else f"{self.goal.name}"
+            names = [t.name.lower() for t in self.goal.terms]
+            predicat = f"{self.goal.name}({','.join(names)})" if len(names) > 0 else f"{self.goal.name}"
             goal += f"but({predicat}).\n"
 
         elif not isinstance(self.goal, Not):
             for g in self.goal.operands:
                 if isinstance(g, Predicate):
-                    names = [t.name.upper() for t in g.terms]
-                    predicat = f"{g.name}({', '.join(names)})" if len(names) > 0 else f"{g.name}"
+                    names = [t.name.lower() for t in g.terms]
+                    predicat = f"{g.name}({','.join(names)})" if len(names) > 0 else f"{g.name}"
                     goal += f"but({predicat}).\n"
                 elif isinstance(g, Not):
                     continue
@@ -183,4 +183,4 @@ if __name__ == "__main__":
     domain = DomainWriter("./pddl_examples/domain.pddl")
     problem = ProblemWriter("./pddl_examples/problem.pddl")
     writer = PDDLWriter("./pddl_examples/blockWorld-domain.pddl", "./pddl_examples/blockWorld-problem.pddl")
-    writer.write("test.lp", 10)
+    writer.write("./outputs/blockworld.lp", 10)
