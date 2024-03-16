@@ -11,17 +11,21 @@ class DomainWriter(object):
         self.actions = domain.actions
 
     def write_predicates(self):
+        # On écrit les prédicats pred(P)
         predicates = ""
         for p in self.predicates:
             names = [t.name.upper() for t in p.terms]
             types = [f"{sorted(t.type_tags)[0]}({t.name.upper()})" for t in p.terms]
+            # Prédicat avec arguments
             if len(names) > 0:
                 predicates += f"pred({p.name}({','.join(names)})) :- {', '.join(types)}.\n"
+            # Prédicat sans argument
             else:
                 predicates += f"pred({p.name}).\n"
         return predicates
 
     def write_actions(self):
+        # On écrit les prédicats action(A)
         actions = ""
         for a in self.actions:
             names = [t.name.upper() for t in a.parameters]
@@ -35,6 +39,7 @@ class DomainWriter(object):
     def write_preconditions(self):
         preconditions = ""
         for a in self.actions:
+            # Précondition unaire
             if isinstance(a.precondition, Predicate):
                 p = a.precondition
                 names = [t.name.upper() for t in p.terms]
@@ -42,6 +47,7 @@ class DomainWriter(object):
                 params_names = [t.name.upper() for t in a.parameters]
                 action = f"{a.name}({','.join(names)})" if len(params_names) > 0 else f"{a.name}"
                 preconditions += f"pre({action}, {predicat}) :- action({action}).\n"
+            # On ne traite pas les prédicats négatifs
             elif not isinstance(a.precondition, Not):
                 for p in a.precondition.operands:
                     if isinstance(p, Not):
@@ -51,12 +57,15 @@ class DomainWriter(object):
                     params_names = [t.name.upper() for t in a.parameters]
                     action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                     preconditions += f"pre({action}, {predicat}) :- action({action}).\n"
+        # On s'assure qu'une action n'est réalisée que si ses préconditions sont vérifiées
         preconditions += "\n:- perform(A,T), pre(A,C), not holds(C,T), time(T).\n"
         return preconditions
     
     def write_positive_effects(self):
+        # On écrit les effets positifs add(A,F)
         positive_effects = ""
         for a in self.actions:
+            # Action avec un seul effet positif
             if isinstance(a.effect, Predicate):
                 p = a.effect
                 names = [t.name.upper() for t in p.terms]
@@ -64,8 +73,10 @@ class DomainWriter(object):
                 params_names = [t.name.upper() for t in a.parameters]
                 action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                 positive_effects += f"add({action}, {predicat}) :- action({action}).\n"
+            # Action avec plusieurs effets
             elif not isinstance(a.effect, Not):
                 for p in a.effect.operands:
+                    # On ignore les prédicats négatifs qui sont des effets négatifs
                     if isinstance(p, Not):
                         continue
                     names = [t.name.upper() for t in p.terms]
@@ -73,12 +84,15 @@ class DomainWriter(object):
                     params_names = [t.name.upper() for t in a.parameters]
                     action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                     positive_effects += f"add({action}, {predicat}) :- action({action}).\n"
+        # On ajoute le fluent F à l'étape T+1 si l'action A est réalisée à l'étape T
         positive_effects += "\nholds(F,T+1) :- perform(A,T), add(A,F).\n"
         return positive_effects
 
     def write_negative_effects(self):
+        # On écrit les effets négatifs del(A,F)
         negative_effects = ""
         for a in self.actions:
+            # Action avec un seul effet négatif
             if isinstance(a.effect, Not):
                 p = a.effect.argument
                 names = [t.name.upper() for t in p.terms]
@@ -86,8 +100,10 @@ class DomainWriter(object):
                 params_names = [t.name.upper() for t in a.parameters]
                 action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                 negative_effects += f"del({action}, {predicat}) :- action({action}).\n"
+            # Action avec plusieurs effets
             elif not isinstance(a.effect, Predicate):
                 for p in a.effect.operands:
+                    # On ignore les effets positifs
                     if isinstance(p, Predicate):
                         continue
                     p = p.argument
@@ -96,6 +112,7 @@ class DomainWriter(object):
                     params_names = [t.name.upper() for t in a.parameters]
                     action = f"{a.name}({','.join(params_names)})" if len(params_names) > 0 else f"{a.name}"
                     negative_effects += f"del({action}, {predicat}) :- action({action}).\n"
+        # On propage les fluents F à l'instant T+1 à moins que l'action A réalisée à l'instant T ne supprime F
         negative_effects += "\nholds(F,T+1) :- holds(F,T), perform(A,T), not del(A,F), time(T).\n"
         return negative_effects
 
@@ -118,6 +135,7 @@ class ProblemWriter(object):
         self.goal = problem.goal
 
     def write_objects(self):
+        # Objets utilisés dans le programme
         objects = ""
         for o in self.objects:
             objects += f"{o.type_tag}({o.name.lower()}).\n"
@@ -130,26 +148,32 @@ class ProblemWriter(object):
                 names = [t.name.lower() for t in i.terms]
                 predicat = f"{i.name}({','.join(names)})" if len(names) > 0 else f"{i.name}"
                 init += f"init({predicat}).\n"
+            # On ignore les prédicats négatifs
             elif isinstance(i, Not):
                 continue
+        # Les fluents initiaux sont vrais à l'instant 0
         init += "\nholds(F,0) :- init(F).\n"
         return init
     
     def write_goal(self):
         goal = ""
+        # Un seul objectif
         if isinstance(self.goal, Predicate):
             names = [t.name.lower() for t in self.goal.terms]
             predicat = f"{self.goal.name}({','.join(names)})" if len(names) > 0 else f"{self.goal.name}"
             goal += f"but({predicat}).\n"
 
+        # Plusieurs objectifs
         elif not isinstance(self.goal, Not):
             for g in self.goal.operands:
                 if isinstance(g, Predicate):
                     names = [t.name.lower() for t in g.terms]
                     predicat = f"{g.name}({','.join(names)})" if len(names) > 0 else f"{g.name}"
                     goal += f"but({predicat}).\n"
+                # On ignore les prédicats négatifs
                 elif isinstance(g, Not):
                     continue
+        # On s'assure que les fluents de l'objectif sont vrais à l'instant n
         goal += "\n:- but(F), not holds(F,n).\n"
         return goal
 
@@ -180,7 +204,5 @@ class PDDLWriter(object):
 
 
 if __name__ == "__main__":
-    domain = DomainWriter("./pddl_examples/domain.pddl")
-    problem = ProblemWriter("./pddl_examples/problem.pddl")
     writer = PDDLWriter("./pddl_examples/blockWorld-domain.pddl", "./pddl_examples/blockWorld-problem.pddl")
     writer.write("./outputs/blockworld.lp", 10)
