@@ -34,7 +34,6 @@ def find_minimal_plan(domain_file, problem_file):
                 temps_final = time.time()
                 print(f"Temps de calcul : {(temps_final - temps_initial):.2f} seconde(s)")
                 return parse_answer(lines[i+1])
-    print(f"Plan non trouvé pour n <= {max_n}, arrêt.")
     print(f"Temps de calcul : {(temps_final - temps_initial):.2f} seconde(s)")
     return None
 
@@ -52,6 +51,9 @@ def parse_answer(answer):
 if __name__ == "__main__":
     domain_file, problem_file = sys.argv[1], sys.argv[2]
     plan = find_minimal_plan(domain_file, problem_file)
-    print(f"Longueur du plan minimal : n = {len(plan)} étapes")
-    print("Plan minimal :")
-    print("\n".join(["{: <8}".format(k) + v for k, v in plan.items()]))
+    if plan is not None:
+        print(f"Longueur du plan minimal : n = {len(plan)} étapes")
+        print("Plan minimal :")
+        print("\n".join(["{: <8}".format(k) + v for k, v in plan.items()]))
+    else:
+        print(f"Pas de plan minimal pour n <= {max_n}")
